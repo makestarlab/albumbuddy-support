@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { CancelCircleMono, HelpMono } from '../icons';
-import { faqs, popularityOrder } from '../lib/faqData';
-import { trackClick, getDisplayCounts, fetchGlobalCounts, refreshSnapshot } from '../lib/faqClickTracker';
-import { fetchFaqItems } from '../lib/faqNotion';
+import { faqs } from '../lib/faqData';
+import { trackClick } from '../lib/faqClickTracker';
+import { fetchFaqItems } from '../lib/faqSupabase';
 import { t, currentLang } from '../i18n';
 
 const emit = defineEmits<{ navigate: [view: string] }>();
@@ -17,9 +17,6 @@ const notionItems = ref<Awaited<ReturnType<typeof fetchFaqItems>>>([]);
 const notionLoading = ref(true);
 const notionError = ref(false);
 
-// ── 클릭 카운트 (반응형) ─────────────────────────────────────────
-const clickCounts = ref<Record<string, number>>({});
-
 // ── 통합 표시 아이템 타입 ────────────────────────────────────────
 interface DisplayItem {
   id?: string;
@@ -30,7 +27,7 @@ interface DisplayItem {
 
 const isSearching = computed(() => searchQuery.value.trim().length > 0);
 
-// 현재 언어로 필터된 아이템 (언어별 컬럼 구조)
+// 현재 언어로 필터된 아이템 (DB order_index 순서 그대로)
 const langItems = computed<DisplayItem[]>(() => {
   if (!notionError.value && notionItems.value.length > 0) {
     const lang = currentLang.value;
@@ -46,25 +43,9 @@ const langItems = computed<DisplayItem[]>(() => {
   return faqs.map((f) => ({ q: f.q, a: f.a, category: f.category }));
 });
 
-function itemScore(item: DisplayItem, counts: Record<string, number>): number {
-  return (item.id ? (counts[item.id] ?? 0) : 0) + (counts[item.q] ?? 0);
-}
-
-// 클릭순으로 정렬된 아이템 (All 탭용)
-const sortedLangItems = computed<DisplayItem[]>(() => {
-  const counts = clickCounts.value;
-  return [...langItems.value].sort((a, b) => itemScore(b, counts) - itemScore(a, counts));
-});
-
-// 카테고리 목록 — 해당 카테고리 총 클릭수 내림차순 정렬
+// 카테고리 목록 (등장 순서)
 const categories = computed(() => {
-  const counts = clickCounts.value;
   const cats = [...new Set(langItems.value.map((i) => i.category).filter(Boolean))];
-  const catScore = new Map<string, number>();
-  langItems.value.forEach((item) => {
-    catScore.set(item.category, (catScore.get(item.category) ?? 0) + itemScore(item, counts));
-  });
-  cats.sort((a, b) => (catScore.get(b) ?? 0) - (catScore.get(a) ?? 0));
   return ['All', ...cats];
 });
 
@@ -75,14 +56,8 @@ const filteredItems = computed<DisplayItem[]>(() => {
       (i) => i.q.toLowerCase().includes(q) || i.a.toLowerCase().includes(q),
     );
   }
-  if (activeCategory.value === 'All') {
-    return sortedLangItems.value;
-  }
-  // 카테고리 필터 — 해당 카테고리 내에서도 클릭순
-  const counts = clickCounts.value;
-  return langItems.value
-    .filter((i) => i.category === activeCategory.value)
-    .sort((a, b) => (counts[b.q] ?? 0) - (counts[a.q] ?? 0));
+  if (activeCategory.value === 'All') return langItems.value;
+  return langItems.value.filter((i) => i.category === activeCategory.value);
 });
 
 // 검색 중일 때 답변 포함 항목 자동 펼치기
@@ -126,29 +101,10 @@ function measureBar() {
   }
 }
 
-let snapshotTimer: ReturnType<typeof setInterval> | null = null;
-
 onMounted(async () => {
   window.addEventListener('scroll', handleScroll, { passive: true });
   requestAnimationFrame(measureBar);
 
-  // 동기 캐시로 즉시 표시, 이후 Worker에서 전체 집계 비동기 로드
-  clickCounts.value = getDisplayCounts();
-  fetchGlobalCounts().then((counts) => {
-    clickCounts.value = counts;
-  });
-
-  // 1시간마다 Worker에서 최신 집계 갱신
-  snapshotTimer = setInterval(
-    () => {
-      refreshSnapshot().then((counts) => {
-        clickCounts.value = counts;
-      });
-    },
-    60 * 60 * 1000,
-  );
-
-  // Notion 데이터 비동기 fetch
   try {
     notionItems.value = await fetchFaqItems();
   } catch {
@@ -160,7 +116,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
-  if (snapshotTimer) clearInterval(snapshotTimer);
 });
 
 function selectCategory(cat: string) {

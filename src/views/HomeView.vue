@@ -2,33 +2,27 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { t, currentLang } from '../i18n';
 import { faqs, popularityOrder, categoryKeyMap } from '../lib/faqData';
-import { getTopKeys, fetchGlobalCounts } from '../lib/faqClickTracker';
-import { fetchFaqItems } from '../lib/faqNotion';
+import { fetchFaqItems } from '../lib/faqSupabase';
 
 const emit = defineEmits<{ navigate: [view: string] }>();
 
 // ── Notion FAQ 데이터 ──────────────────────────────────────────
-import type { FaqNotionItem } from '../lib/faqNotion';
+import type { FaqNotionItem } from '../lib/faqSupabase';
 const notionFaqItems = ref<FaqNotionItem[]>([]);
 
-// ── 로컬 폴백 ──────────────────────────────────────────────────
-const localFallbackQuestions = popularityOrder.slice(0, 5).map((i) => faqs[i].q);
-const allLocalQuestions = faqs.map((f) => f.q);
-
-function buildLocalTopFaqs(questions: string[]) {
-  return questions.map((q) => {
-    const faq = faqs.find((f) => f.q === q) ?? faqs[popularityOrder[0]];
+// ── 로컬 폴백 (Supabase 응답 없을 때) ──────────────────────────
+function buildLocalTopFaqs() {
+  return popularityOrder.slice(0, 5).map((i) => {
+    const faq = faqs[i];
     return { q: faq.q, a: faq.a, category: categoryKeyMap[faq.category] ?? '기타 문의' };
   });
 }
 
-// ── Notion 기반 top FAQ 생성 ────────────────────────────────────
-function buildNotionTopFaqs(lang: string) {
-  // ID → { q, category } 맵 (현재 언어 우선, 없으면 영어 폴백)
-  // ID 중복 제거: 같은 ID의 항목이 여러 개인 경우 첫 번째만 사용
+// ── Supabase FAQ 처음 5개 (DB order_index 순서) ─────────────────
+function buildTopFaqs(lang: string) {
   const seenId = new Set<string>();
   const seenQ = new Set<string>();
-  const items = notionFaqItems.value
+  return notionFaqItems.value
     .map((i) => ({
       id: i.id,
       q: i.questions[lang] || i.questions['en'] || '',
@@ -41,37 +35,19 @@ function buildNotionTopFaqs(lang: string) {
       seenId.add(i.id);
       seenQ.add(i.q);
       return true;
-    });
-
-  if (items.length === 0) return null;
-
-  // 클릭 기반 정렬 (또는 DB 순서 폴백), 상위 N개 ID 반환
-  const allIds = items.map((i) => i.id);
-  const topIds = getTopKeys(allIds, items.length, allIds.slice(0, 5));
-
-  // ID → item 매핑, 질문 텍스트 기준 중복 제거, 최대 5개
-  const seenFinal = new Set<string>();
-  return topIds
-    .map((id) => items.find((i) => i.id === id))
-    .filter((i): i is { id: string; q: string; a: string; category: string } => {
-      if (!i || seenFinal.has(i.q)) return false;
-      seenFinal.add(i.q);
-      return true;
     })
     .slice(0, 5);
 }
 
 function refreshTopFaqs() {
   if (notionFaqItems.value.length > 0) {
-    const notion = buildNotionTopFaqs(currentLang.value);
-    if (notion) {
-      topFaqs.value = notion;
+    const top = buildTopFaqs(currentLang.value);
+    if (top.length > 0) {
+      topFaqs.value = top;
       return;
     }
   }
-  // Notion 없으면 로컬 폴백
-  const top = getTopKeys(allLocalQuestions, 5, localFallbackQuestions);
-  topFaqs.value = buildLocalTopFaqs(top);
+  topFaqs.value = buildLocalTopFaqs();
 }
 
 const topFaqs = ref<Array<{ q: string; a: string; category: string }>>([]);
@@ -89,12 +65,7 @@ function toggleFaq(idx: number) {
 watch(currentLang, refreshTopFaqs);
 
 onMounted(async () => {
-  // Worker에서 전체 사용자 통합 집계 로드 + Notion 데이터 fetch (병렬)
-  const [, faqItems] = await Promise.all([
-    fetchGlobalCounts(),
-    fetchFaqItems().catch(() => [] as FaqNotionItem[]),
-  ]);
-  notionFaqItems.value = faqItems;
+  notionFaqItems.value = await fetchFaqItems().catch(() => [] as FaqNotionItem[]);
   refreshTopFaqs();
   topFaqsLoading.value = false;
 });

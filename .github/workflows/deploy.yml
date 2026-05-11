@@ -32,8 +32,8 @@ jobs:
 
       - run: pnpm build
         env:
-          VITE_NOTION_PROXY_URL: ${{ vars.VITE_NOTION_PROXY_URL }}
-          VITE_FAQ_CLICKS_URL: ${{ vars.VITE_FAQ_CLICKS_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

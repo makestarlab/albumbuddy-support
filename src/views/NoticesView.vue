@@ -8,7 +8,7 @@ import {
   type NoticePost,
   type NoticeDetail,
   type NoticeLang,
-} from '../lib/notion';
+} from '../lib/noticesSupabase';
 import { currentLang, t } from '../i18n';
 
 const props = defineProps<{ initialNotice?: string }>();

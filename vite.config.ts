@@ -7,11 +7,6 @@ export default defineConfig({
   base: '/albumbuddy-support/',
   server: {
     proxy: {
-      '/notion-api': {
-        target: 'https://www.notion.so',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/notion-api/, '/api/v3'),
-      },
       '/zendesk-api': {
         target: 'https://albumbuddy.zendesk.com/api/v2',
         changeOrigin: true,

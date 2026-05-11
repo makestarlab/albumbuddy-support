@@ -56,10 +56,11 @@ watch(currentLang, (newLang, oldLang) => {
   }
 });
 
-// dev: Vite 프록시, prod: Cloudflare Worker
+// dev: Vite 프록시(CORS 우회), prod: Zendesk 직접 호출
+// 운영에서 동작하려면 Zendesk Admin → Security → CORS에 본 사이트 origin 등록 필요.
 const ZENDESK_BASE = import.meta.env.DEV
   ? '/zendesk-api'
-  : `${import.meta.env.VITE_NOTION_PROXY_URL ?? ''}/zendesk`;
+  : 'https://albumbuddy.zendesk.com/api/v2';
 
 const files = ref<File[]>([]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
