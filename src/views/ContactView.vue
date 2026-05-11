@@ -177,7 +177,10 @@ async function submit() {
           body,
           ...(tokens.length > 0 ? { uploads: tokens } : {}),
         },
-        requester: { email: form.value.email.trim() },
+        requester: {
+          email: form.value.email.trim(),
+          name: form.value.email.trim().split('@')[0] || 'Customer',
+        },
         custom_fields: customFields,
         tags: [`lang_${currentLang.value}`],
       },

@@ -86,22 +86,20 @@ const shippingSteps = computed(() => [
 
 // ── Figma asset URLs (fetched 2026-04-07, valid 7 days) ──────────
 // Hero
-const imgHeroBg = 'https://www.figma.com/api/mcp/asset/336d2184-1d36-402b-b862-17f0806e8bdf'; // desktop
-const imgHeroBgMobile = 'https://www.figma.com/api/mcp/asset/fb16c84f-9004-4e1e-9be5-81ec4fd25d6e'; // mobile
-const imgLogoDesktop = 'https://www.figma.com/api/mcp/asset/4d8d8365-6c11-45bf-b51e-64cf0a5643bb'; // 523×79
-const imgLogoMobile = 'https://www.figma.com/api/mcp/asset/66af015b-ed48-46bd-be7b-83ff0b1bcf6e'; // 262×40
+const imgHeroBg = import.meta.env.BASE_URL + 'images/hero-bg.png'; // desktop
+const imgHeroBgMobile = import.meta.env.BASE_URL + 'images/phone-hero-bg.png';  // mobile
+const imgLogo = import.meta.env.BASE_URL + 'images/logo.png';
 
 // Features – desktop (node 35:15829, composite images — no overlay needed)
-const imgPhone1Desktop = 'https://www.figma.com/api/mcp/asset/44f4fa0a-5b4f-4be1-b33a-5b449d6f6d4f'; // 구매대행 616×915
-const imgPhone2Desktop = 'https://www.figma.com/api/mcp/asset/19e358aa-c3d6-4f79-9929-6ea131771db5'; // 배송대행 440×894
+const imgPhone1Desktop = import.meta.env.BASE_URL + 'images/proxy.png'; // 구매대행 616×915
+const imgPhone2Desktop = import.meta.env.BASE_URL + 'images/shipping.png'; // 배송대행 440×894
 
 // Features – mobile (로컬 에셋)
 const imgPhone1Mobile = import.meta.env.BASE_URL + 'images/phone-proxy.png'; // 구매대행 모바일
 const imgPhone2Mobile = import.meta.env.BASE_URL + 'images/phone-shipping.png'; // 배송대행 모바일
 
 // CTA
-const imgCta = 'https://www.figma.com/api/mcp/asset/10226d8f-4a1f-41f6-ad7c-466d2a990d3c';
-const imgCtaMobile = 'https://www.figma.com/api/mcp/asset/92d39467-02b1-4c6c-a4d7-d4ee4a8d51f8';
+const imgCta = import.meta.env.BASE_URL + 'images/cta.png'; //
 
 function scrollToStats() {
   document.getElementById('stats-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -203,8 +201,8 @@ onUnmounted(() => {
       <!-- Bottom gradient + content (295px desktop / 254px mobile) -->
       <div class="hero-bottom">
         <!-- Logo: fixed dimensions, object-fit:contain prevents squish -->
-        <img class="hero-logo hero-logo--desktop" :src="imgLogoDesktop" alt="AlbumBuddy" />
-        <img class="hero-logo hero-logo--mobile" :src="imgLogoMobile" alt="AlbumBuddy" />
+        <img class="hero-logo hero-logo--desktop" :src="imgLogo" alt="AlbumBuddy" />
+        <img class="hero-logo hero-logo--mobile" :src="imgLogo" alt="AlbumBuddy" />
 
         <p class="hero-subtitle">
           {{ t('hero-subtitle') }}
@@ -432,7 +430,7 @@ onUnmounted(() => {
     <!-- ── CTA ───────────────────────────────────────────────────── -->
     <section class="cta-section">
       <div class="cta-bg cta-bg--desktop" :style="`background-image:url(${imgCta})`" />
-      <div class="cta-bg cta-bg--mobile" :style="`background-image:url(${imgCtaMobile})`" />
+      <div class="cta-bg cta-bg--mobile" :style="`background-image:url(${imgCta})`" />
       <div
         style="position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); pointer-events: none"
       />

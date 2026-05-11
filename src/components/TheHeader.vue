@@ -24,8 +24,7 @@ const navItems = [
 ];
 
 // Figma 로고 에셋 (node 4-4757 desktop / 46-2354 mobile)
-const logoIconDesktop = 'https://www.figma.com/api/mcp/asset/8a900b49-2fad-41a2-9544-2537c900d503'; // 40×40
-const logoIconMobile = 'https://www.figma.com/api/mcp/asset/0e733529-4b45-43e1-a600-e7589ad425f2'; // 32×32
+const imgLogo = import.meta.env.BASE_URL + 'images/logo.png';
 
 // GNB는 홈 뷰 + 스크롤 전에만 투명(흰 텍스트), 나머지는 흰 배경(다크 텍스트)
 const isTransparent = computed(
@@ -62,9 +61,9 @@ onUnmounted(() => {
       <!-- Logo: icon + "Customer Support" text -->
       <button class="gnb-logo-btn" @click="navigate('home')">
         <!-- Desktop: 40×40 icon + gap 8px -->
-        <img :src="logoIconDesktop" alt="" class="gnb-logo-icon gnb-logo-icon--desktop" />
+        <img :src="imgLogo" alt="" class="gnb-logo-icon gnb-logo-icon--desktop" />
         <!-- Mobile: 32×32 icon + gap 4px -->
-        <img :src="logoIconMobile" alt="" class="gnb-logo-icon gnb-logo-icon--mobile" />
+        <img :src="imgLogo" alt="" class="gnb-logo-icon gnb-logo-icon--mobile" />
         <span class="gnb-logo-text">Customer Support</span>
       </button>
 
