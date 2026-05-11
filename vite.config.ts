@@ -4,7 +4,6 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
-  base: '/albumbuddy-support/',
   server: {
     proxy: {
       '/zendesk-api': {
