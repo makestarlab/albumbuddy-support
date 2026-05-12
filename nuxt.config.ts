@@ -15,6 +15,21 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        // 외부 이미지 호스트 미리 연결 (DNS+TLS 핸드셰이크 사전 처리 → hero-bg LCP 단축)
+        {
+          rel: 'preconnect',
+          href: 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com',
+          crossorigin: '',
+        },
+        {
+          rel: 'dns-prefetch',
+          href: 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com',
+        },
+        {
+          rel: 'preconnect',
+          href: 'https://rgdtezwgbngfpihvgnta.supabase.co',
+          crossorigin: '',
+        },
         {
           rel: 'stylesheet',
           href: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css',
