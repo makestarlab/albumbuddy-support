@@ -114,6 +114,12 @@ const translations: Record<string, Record<Lang, string>> = {
     ja: 'AlbumBuddyの登録アカウントを入力してください。',
     'zh-CN': '请输入您的AlbumBuddy注册账号邮箱。',
   },
+  '이메일 형식 오류': {
+    ko: '올바른 이메일 형식이 아닙니다.',
+    en: 'Please enter a valid email address.',
+    ja: '正しいメール形式ではありません。',
+    'zh-CN': '请输入正确的邮箱地址。',
+  },
   제목: { ko: '제목', en: 'Subject', ja: '件名', 'zh-CN': '主题' },
   '제목 placeholder': {
     ko: '내용을 입력해주세요',
@@ -196,6 +202,18 @@ const translations: Record<string, Record<Lang, string>> = {
     en: 'Submit another request',
     ja: '新しいお問い合わせを送る',
     'zh-CN': '提交新请求',
+  },
+  '접수 성공 토스트': {
+    ko: '문의가 정상적으로 접수되었습니다.',
+    en: 'Your inquiry has been received.',
+    ja: 'お問い合わせを正常に受け付けました。',
+    'zh-CN': '您的咨询已成功提交。',
+  },
+  '접수 실패 토스트': {
+    ko: '문의를 전달하지 못했어요. 다시 시도해 주세요.',
+    en: 'Failed to send your inquiry. Please try again.',
+    ja: 'お問い合わせを送信できませんでした。もう一度お試しください。',
+    'zh-CN': '提交咨询失败,请重试。',
   },
   '제출 오류': {
     ko: '문의 제출에 실패했습니다. 다시 시도해 주세요.',

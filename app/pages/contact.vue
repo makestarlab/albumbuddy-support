@@ -65,10 +65,12 @@ const ZENDESK_BASE = 'https://albumbuddy.zendesk.com/api/v2';
 const files = ref<File[]>([]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const toastMessage = ref('');
+const toastType = ref<'success' | 'error'>('success');
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-function showToast(msg: string) {
+function showToast(msg: string, type: 'success' | 'error' = 'error') {
   toastMessage.value = msg;
+  toastType.value = type;
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toastMessage.value = ''; }, 3000);
 }
@@ -77,7 +79,6 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const isDragging = ref(false);
 const submitting = ref(false);
 const submitted = ref(false);
-const submitError = ref('');
 
 const categoryOptions = computed(() => [
   { value: '계정', label: t('계정 관련 문의') },
@@ -88,9 +89,17 @@ const categoryOptions = computed(() => [
   { value: '기타문의', label: t('기타 문의') },
 ]);
 
+// 이메일 유효성 — 한 번 blur된 후에만 에러 표시 (입력 중에는 거슬리지 않게)
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const emailTouched = ref(false);
+const emailValid = computed(() => EMAIL_RE.test(form.value.email.trim()));
+const showEmailError = computed(
+  () => emailTouched.value && form.value.email.trim().length > 0 && !emailValid.value,
+);
+
 const isValid = computed(
   () =>
-    form.value.email.trim() &&
+    emailValid.value &&
     form.value.subject.trim() &&
     form.value.category &&
     form.value.description.trim(),
@@ -147,7 +156,6 @@ async function uploadFile(file: File): Promise<string> {
 async function submit() {
   if (!isValid.value || submitting.value) return;
   submitting.value = true;
-  submitError.value = '';
 
   try {
     // 파일 업로드
@@ -198,8 +206,9 @@ async function submit() {
     }
 
     submitted.value = true;
-  } catch (e: any) {
-    submitError.value = e.message ?? t('제출 오류');
+    showToast(t('접수 성공 토스트'), 'success');
+  } catch {
+    showToast(t('접수 실패 토스트'), 'error');
   } finally {
     submitting.value = false;
   }
@@ -209,7 +218,7 @@ function resetForm() {
   form.value = { email: '', subject: '', category: '', orderNumber: '', description: '' };
   files.value = [];
   submitted.value = false;
-  submitError.value = '';
+  emailTouched.value = false;
 }
 </script>
 
@@ -217,7 +226,46 @@ function resetForm() {
   <div class="min-h-screen bg-white pt-16">
     <!-- Toast -->
     <Transition name="toast">
-      <div v-if="toastMessage" class="toast">{{ toastMessage }}</div>
+      <div v-if="toastMessage" class="toast" :class="`toast--${toastType}`">
+        <!-- success icon -->
+        <svg
+          v-if="toastType === 'success'"
+          class="toast-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" fill="#0bb678" />
+          <path
+            d="M7 12.5l3.5 3.5L17 9"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            fill="none"
+          />
+        </svg>
+        <!-- error icon -->
+        <svg
+          v-else
+          class="toast-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 2 L22 20 L2 20 Z"
+            fill="#e93939"
+          />
+          <path
+            d="M12 9v5M12 17v.5"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        <span>{{ toastMessage }}</span>
+      </div>
     </Transition>
 
     <div class="contact-container">
@@ -266,9 +314,14 @@ function resetForm() {
               v-model="form.email"
               type="email"
               class="field-input"
+              :class="{ 'field-input--error': showEmailError }"
               :placeholder="t('이메일 주소 placeholder')"
               required
+              @blur="emailTouched = true"
             />
+            <p v-if="showEmailError" class="m-0 text-sm text-[#e03131]">
+              {{ t('이메일 형식 오류') }}
+            </p>
           </div>
 
           <!-- 제목 -->
@@ -451,11 +504,6 @@ function resetForm() {
             </ul>
           </div>
 
-          <!-- 에러 메시지 -->
-          <p v-if="submitError" class="m-0 text-sm text-[#e03131]">
-            {{ submitError }}
-          </p>
-
           <!-- 제출 바 -->
           <div class="submit-bar">
             <button
@@ -487,21 +535,32 @@ function resetForm() {
 </template>
 
 <style scoped>
-/* Toast */
+/* Toast (360×60 hug, 디자인 시안 기준) */
 .toast {
   position: fixed;
-  top: 80px;
+  bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: #212529;
-  color: #fff;
-  padding: 12px 24px;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 280px;
+  max-width: 360px;
+  height: 60px;
+  padding: 0 20px;
+  background: #2D353D;
+  color: #FCFDFD;
+  border: 1px solid #e1e6ea;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  white-space: nowrap;
+  box-shadow: 0 2px 8px 0 #00000047;
+}
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 .toast-enter-active,
 .toast-leave-active {
@@ -585,6 +644,10 @@ function resetForm() {
 }
 .field-input::placeholder {
   color: #8a99a8;
+}
+.field-input--error,
+.field-input--error:focus {
+  border-color: #e03131;
 }
 
 /* Select */
@@ -767,6 +830,7 @@ function resetForm() {
 .reset-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   height: 48px;
   padding: 0 28px;
   border-radius: 8px;
