@@ -96,7 +96,12 @@ async function openPost(post: NoticePost) {
 function goBack() {
   selectedDetail.value = null;
   currentPost.value = null;
-  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' });
+  // sticky 측정값 reset (v-if로 list DOM이 재생성되므로 다음 frame에 재측정)
+  isStuck.value = false;
+  if (import.meta.client) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    nextTick(() => requestAnimationFrame(measureBar));
+  }
 }
 
 // 상세 보기 중 언어 변경 시 같은 그룹의 새 언어 버전으로 재fetch
@@ -232,13 +237,6 @@ watch(currentLang, async () => {
             {{ isSearching ? 'No results found.' : '게시글이 없습니다.' }}
           </p>
 
-          <div v-if="filteredPosts.length > 0 && !isSearching" class="board-pagination">
-            <button class="pagination-btn text-[#adb5bd]">&lt;</button>
-            <button class="pagination-btn bg-[#212529] font-bold text-white">
-              1
-            </button>
-            <button class="pagination-btn text-[#adb5bd]">&gt;</button>
-          </div>
         </template>
       </div>
     </template>
@@ -270,28 +268,6 @@ watch(currentLang, async () => {
 .board-post-title {
   font-size: 16px;
   line-height: 24px;
-}
-.board-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 48px;
-}
-.pagination-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  font-size: 14px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-.pagination-btn:hover {
-  background-color: #f1f3f5;
 }
 .board-post-header {
   display: flex;
