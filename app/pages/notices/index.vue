@@ -7,11 +7,6 @@ useHead({ title: '공지사항 — AlbumBuddy Support' });
 
 const route = useRoute();
 
-const NOTICE_KEYWORDS: Record<string, string[]> = {
-  terms: ['이용약관', 'Term of Service', 'Terms of Service', '利用規約', '服务条款'],
-  privacy: ['개인정보', 'Privacy Policy', '個人情報', 'プライバシー', '隐私政策'],
-};
-
 const { data: postsData, pending: loading, error: fetchError } = await useNoticePosts();
 const posts = computed<NoticePost[]>(() => postsData.value ?? []);
 const error = computed(() => !!fetchError.value);
@@ -65,11 +60,10 @@ function measureBar() {
 }
 
 async function autoOpenFromQuery() {
-  const type = route.query.type as string | undefined;
-  if (!type || !NOTICE_KEYWORDS[type]) return;
-  const keywords = NOTICE_KEYWORDS[type];
+  const id = route.query.id as string | undefined;
+  if (!id) return;
   const visible = filterPostsByLang(posts.value, currentLang.value as NoticeLang);
-  const match = visible.find((p) => keywords.some((kw) => p.title.includes(kw)));
+  const match = visible.find((p) => p.id === id);
   if (match) await openPost(match);
 }
 
@@ -80,7 +74,7 @@ onMounted(async () => {
 });
 
 // query 변경 (예: footer에서 다른 공지로 이동) 감지
-watch(() => route.query.type, autoOpenFromQuery);
+watch(() => route.query.id, autoOpenFromQuery);
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);

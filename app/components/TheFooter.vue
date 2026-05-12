@@ -1,5 +1,9 @@
 <script setup lang="ts">
-// 자동 import: t (i18n.ts)
+// 자동 import: t, useNoticePosts, findNoticeIdByKey, computed
+
+const { data: posts } = await useNoticePosts();
+const termsId = computed(() => findNoticeIdByKey(posts.value ?? [], 'terms'));
+const privacyId = computed(() => findNoticeIdByKey(posts.value ?? [], 'privacy'));
 </script>
 
 <template>
@@ -21,13 +25,13 @@
 
         <nav class="flex flex-wrap items-center gap-5 md:flex-nowrap md:gap-11">
           <NuxtLink
-            to="/notices?type=terms"
+            :to="termsId ? `/notices?id=${termsId}` : '/notices'"
             class="text-sm font-bold leading-5 tracking-[-0.3px] text-gray-050 hover:text-gray-060"
           >
             {{ t('이용약관') }}
           </NuxtLink>
           <NuxtLink
-            to="/notices?type=privacy"
+            :to="privacyId ? `/notices?id=${privacyId}` : '/notices'"
             class="text-sm font-bold leading-5 tracking-[-0.3px] text-gray-050 hover:text-gray-060"
           >
             {{ t('개인정보 처리방침') }}

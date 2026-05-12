@@ -123,6 +123,22 @@ export async function fetchNoticeDetail(slug: string): Promise<NoticeDetail> {
 }
 
 /**
+ * 약관/개인정보 같은 특정 공지를 찾기 위한 키워드 (각 언어 제목에 포함되는 단어)
+ */
+export const NOTICE_KEYWORDS = {
+  terms: ['이용약관', 'Term of Service', 'Terms of Service', '利用規約', '服务条款'],
+  privacy: ['개인정보', 'Privacy Policy', '個人情報', 'プライバシー', '隐私政策'],
+} as const satisfies Record<string, readonly string[]>;
+
+export type NoticeKey = keyof typeof NOTICE_KEYWORDS;
+
+/** 키워드로 매칭되는 공지의 row id를 찾는다 (못 찾으면 빈 문자열) */
+export function findNoticeIdByKey(posts: NoticePost[], key: NoticeKey): string {
+  const keywords = NOTICE_KEYWORDS[key];
+  return posts.find((p) => keywords.some((kw) => p.title.includes(kw)))?.id ?? '';
+}
+
+/**
  * 현재 언어에 맞는 변형 하나씩만 추출 (기존 로직 그대로)
  */
 export function filterPostsByLang(posts: NoticePost[], lang: NoticeLang): NoticePost[] {
