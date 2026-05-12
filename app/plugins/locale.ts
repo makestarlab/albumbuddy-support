@@ -13,7 +13,9 @@ const SUPPORTED: Lang[] = ['ko', 'en', 'ja', 'zh-CN'];
 
 function parseAcceptLanguage(header: string | undefined): Lang {
   if (!header) return 'en';
-  const tags = header.split(',').map((s) => s.split(';')[0].trim().toLowerCase());
+  const tags = header
+    .split(',')
+    .map((s) => (s.split(';')[0] ?? '').trim().toLowerCase());
   for (const tag of tags) {
     if (tag.startsWith('ko')) return 'ko';
     if (tag.startsWith('ja')) return 'ja';

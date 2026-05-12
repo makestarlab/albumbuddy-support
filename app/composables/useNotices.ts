@@ -14,12 +14,12 @@ const LANG_TO_DB: Record<NoticeLang, string> = {
   'zh-CN': '중문',
 };
 
-const COL: Record<NoticeLang, { title: string; body: string }> = {
+const COL = {
   ko: { title: 'title_ko', body: 'body_ko' },
   en: { title: 'title_en', body: 'body_en' },
   ja: { title: 'title_ja', body: 'body_ja' },
   'zh-CN': { title: 'title_zh_cn', body: 'body_zh_cn' },
-};
+} as const satisfies Record<NoticeLang, { title: keyof NoticeRow; body: keyof NoticeRow }>;
 
 interface NoticeRow {
   id: string;
@@ -63,7 +63,7 @@ function rowsToPosts(rows: NoticeRow[]): NoticePost[] {
   rows.forEach((row, groupIdx) => {
     const dateStr = formatDate(row.published_at);
     for (const lang of LANGS) {
-      const title = (row as any)[COL[lang].title];
+      const title = row[COL[lang].title];
       if (!title) continue;
       result.push({
         id: row.id,
@@ -103,6 +103,7 @@ export function useNoticePosts() {
 export async function fetchNoticeDetail(slug: string): Promise<NoticeDetail> {
   const supabase = useSupabaseClient();
   const [id, langRaw] = slug.split(':');
+  if (!id) throw new Error('invalid slug');
   const lang = (LANGS.includes(langRaw as NoticeLang) ? langRaw : 'en') as NoticeLang;
 
   const { data, error } = await supabase
@@ -115,9 +116,9 @@ export async function fetchNoticeDetail(slug: string): Promise<NoticeDetail> {
 
   const row = data as NoticeRow;
   return {
-    title: String((row as any)[COL[lang].title] ?? ''),
+    title: String(row[COL[lang].title] ?? ''),
     date: formatDate(row.published_at),
-    contentHtml: String((row as any)[COL[lang].body] ?? ''),
+    contentHtml: String(row[COL[lang].body] ?? ''),
   };
 }
 

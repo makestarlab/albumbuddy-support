@@ -10,10 +10,15 @@ const notionFaqItems = computed<FaqNotionItem[]>(() => notionFaqItemsData.value 
 
 // ── 로컬 폴백 (Supabase 응답 없을 때) ──────────────────────────
 function buildLocalTopFaqs() {
-  return popularityOrder.slice(0, 5).map((i) => {
-    const faq = faqs[i];
-    return { q: faq.q, a: faq.a, category: categoryKeyMap[faq.category] ?? '기타 문의' };
-  });
+  return popularityOrder
+    .slice(0, 5)
+    .map((i) => faqs[i])
+    .filter((faq): faq is (typeof faqs)[number] => !!faq)
+    .map((faq) => ({
+      q: faq.q,
+      a: faq.a,
+      category: categoryKeyMap[faq.category] ?? '기타 문의',
+    }));
 }
 
 // ── Supabase FAQ 처음 5개 (DB order_index 순서) ─────────────────
@@ -125,7 +130,7 @@ function scrollToStats() {
 
 // ── 카운팅 인터랙션 ─────────────────────────────────────────────
 // 숫자값만 ref로 관리, 표시값은 computed로 자동 번역
-const statCounts = [ref(0), ref(0), ref(0), ref(0)];
+const statCounts = [ref(0), ref(0), ref(0), ref(0)] as const;
 
 const statConfigs = [
   {
@@ -152,7 +157,7 @@ const statConfigs = [
     countRef: statCounts[3],
     format: undefined as ((n: number) => string) | undefined,
   },
-];
+] as const;
 
 // currentLang이 바뀌면 자동으로 재계산 (computed + t() 의존성)
 const statValues = statConfigs.map((cfg) =>
@@ -189,7 +194,7 @@ onMounted(() => {
 
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0].isIntersecting) {
+      if (entries[0]?.isIntersecting) {
         statConfigs.forEach(animateCount);
         observer?.disconnect();
       }
@@ -257,19 +262,19 @@ onUnmounted(() => {
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">{{ t('판매처') }}</span>
-            <span class="stat-value">{{ statValues[0].value }}</span>
+            <span class="stat-value">{{ statValues[0]?.value }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">{{ t('등록 상품 수') }}</span>
-            <span class="stat-value">{{ statValues[1].value }}</span>
+            <span class="stat-value">{{ statValues[1]?.value }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">{{ t('업데이트 주기') }}</span>
-            <span class="stat-value">{{ statValues[2].value }}</span>
+            <span class="stat-value">{{ statValues[2]?.value }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">{{ t('상품 직접 등록') }}</span>
-            <span class="stat-value">{{ statValues[3].value }}</span>
+            <span class="stat-value">{{ statValues[3]?.value }}</span>
           </div>
         </div>
       </div>

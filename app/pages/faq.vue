@@ -210,10 +210,9 @@ function highlight(text: string): string {
       <div v-else class="faq-list">
         <div v-for="(item, idx) in filteredItems" :key="item.id ?? idx" class="faq-item">
           <button class="faq-btn" @click="toggleFaq(idx)">
-            <span
-              class="faq-q font-bold text-[#212529]"
-              v-html="'Q. ' + highlight(item.q)"
-            />
+            <span class="faq-q font-bold text-[#212529]">
+              Q. <span v-html="highlight(item.q)" />
+            </span>
             <div class="faq-icon">
               <svg
                 class="faq-chevron text-[#adb5bd]"
@@ -228,10 +227,9 @@ function highlight(text: string): string {
             </div>
           </button>
           <div v-if="expandedSet.has(idx)" class="faq-answer">
-            <p
-              class="faq-a m-0 whitespace-pre-line font-bold text-[#868e96]"
-              v-html="'A. ' + highlight(item.a)"
-            />
+            <p class="faq-a m-0 whitespace-pre-line font-bold text-[#868e96]">
+              A. <span v-html="highlight(item.a)" />
+            </p>
           </div>
         </div>
 
