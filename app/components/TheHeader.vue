@@ -195,7 +195,6 @@ onUnmounted(() => {
 }
 .gnb--solid {
   background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .gnb-inner {
   max-width: 1440px;

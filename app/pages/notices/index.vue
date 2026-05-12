@@ -5,7 +5,7 @@ import type { NoticePost, NoticeDetail, NoticeLang } from '~/composables/useNoti
 
 useHead({ title: '공지사항 — AlbumBuddy Support' });
 
-const route = useRoute();
+const { currentId, clearNoticeId } = useNoticeQuery();
 
 const { data: postsData, pending: loading, error: fetchError } = await useNoticePosts();
 const posts = computed<NoticePost[]>(() => postsData.value ?? []);
@@ -42,43 +42,18 @@ const filteredPosts = computed(() => {
 
 const isSearching = computed(() => searchQuery.value.trim().length > 0);
 
-// Sticky bar logic
-const stickyRef = ref<HTMLElement | null>(null);
-const isStuck = ref(false);
-const stickyHeight = ref(0);
-let stickyOriginalTop = 0;
-
-function handleScroll() {
-  isStuck.value = window.scrollY > stickyOriginalTop - 64;
-}
-
-function measureBar() {
-  if (stickyRef.value) {
-    stickyHeight.value = stickyRef.value.offsetHeight;
-    stickyOriginalTop = stickyRef.value.getBoundingClientRect().top + window.scrollY;
-  }
-}
-
 async function autoOpenFromQuery() {
-  const id = route.query.id as string | undefined;
+  const id = currentId.value;
   if (!id) return;
   const visible = filterPostsByLang(posts.value, currentLang.value as NoticeLang);
   const match = visible.find((p) => p.id === id);
   if (match) await openPost(match);
 }
 
-onMounted(async () => {
-  await autoOpenFromQuery();
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  requestAnimationFrame(measureBar);
-});
+onMounted(autoOpenFromQuery);
 
 // query 변경 (예: footer에서 다른 공지로 이동) 감지
-watch(() => route.query.id, autoOpenFromQuery);
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
-});
+watch(currentId, autoOpenFromQuery);
 
 async function openPost(post: NoticePost) {
   currentPost.value = post;
@@ -96,12 +71,8 @@ async function openPost(post: NoticePost) {
 function goBack() {
   selectedDetail.value = null;
   currentPost.value = null;
-  // sticky 측정값 reset (v-if로 list DOM이 재생성되므로 다음 frame에 재측정)
-  isStuck.value = false;
-  if (import.meta.client) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    nextTick(() => requestAnimationFrame(measureBar));
-  }
+  clearNoticeId();
+  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // 상세 보기 중 언어 변경 시 같은 그룹의 새 언어 버전으로 재fetch
@@ -162,7 +133,7 @@ watch(currentLang, async () => {
         </h1>
 
         <!-- Search bar (sticky) -->
-        <div ref="stickyRef" class="notices-bar" :class="{ 'notices-bar--stuck': isStuck }">
+        <div class="notices-bar">
           <div class="notices-bar-inner">
             <div class="faq-search-wrap">
               <svg
@@ -204,9 +175,6 @@ watch(currentLang, async () => {
             </div>
           </div>
         </div>
-
-        <!-- Spacer when bar is fixed -->
-        <div v-if="isStuck" :style="{ height: stickyHeight + 'px' }" />
 
         <div v-if="loading" class="py-12 text-center text-[#adb5bd]">
           불러오는 중...
@@ -373,24 +341,14 @@ watch(currentLang, async () => {
   opacity: 0.85;
 }
 
-/* Sticky search bar */
+/* Sticky search bar — CSS sticky로 브라우저가 처리 (JS 토글 불필요) */
 .notices-bar {
-  padding: 12px 0;
-}
-.notices-bar--stuck {
-  position: fixed;
-  top: 64px;
-  left: 0;
-  right: 0;
+  position: sticky;
+  top: 64px; /* nav 높이 */
   z-index: 20;
   background-color: #ffffff;
-  padding: 12px 24px;
+  padding: 12px 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-.notices-bar--stuck .notices-bar-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
 }
 .notices-bar-inner {
   display: flex;

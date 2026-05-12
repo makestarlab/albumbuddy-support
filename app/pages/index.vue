@@ -210,7 +210,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="overflow-x-hidden bg-white">
+  <div class="overflow-x-clip bg-white">
     <!-- ── Hero ─────────────────────────────────────────────────── -->
     <section class="hero-section">
       <!-- Background (NuxtImg + LCP preload via useHead) -->
