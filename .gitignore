@@ -8,3 +8,5 @@ dist
 .env.*
 !.env.example
 .DS_Store
+# 일회성 데이터 동기화 스크립트 (service_role 키 사용, 운영 무관)
+scripts/
