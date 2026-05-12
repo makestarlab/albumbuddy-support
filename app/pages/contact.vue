@@ -73,7 +73,7 @@ function showToast(msg: string) {
   toastTimer = setTimeout(() => { toastMessage.value = ''; }, 3000);
 }
 
-const MAX_FILE_SIZE = 800 * 1024 * 1024; // 800MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const isDragging = ref(false);
 const submitting = ref(false);
 const submitted = ref(false);
