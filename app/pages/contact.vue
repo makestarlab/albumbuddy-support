@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { t, currentLang, type Lang } from '../i18n';
+import type { Lang } from '~/composables/i18n';
+// 자동 import: ref, computed, watch, t, currentLang
+
+useHead({ title: '문의하기 — AlbumBuddy Support' });
 
 // 언어별 active 템플릿 (레이블만, 클릭 시 pre-fill)
 const descTemplates: Record<Lang, string> = {
@@ -56,11 +58,9 @@ watch(currentLang, (newLang, oldLang) => {
   }
 });
 
-// dev: Vite 프록시(CORS 우회), prod: Zendesk 직접 호출
+// dev/prod 동일하게 Zendesk 직접 호출.
 // 운영에서 동작하려면 Zendesk Admin → Security → CORS에 본 사이트 origin 등록 필요.
-const ZENDESK_BASE = import.meta.env.DEV
-  ? '/zendesk-api'
-  : 'https://albumbuddy.zendesk.com/api/v2';
+const ZENDESK_BASE = 'https://albumbuddy.zendesk.com/api/v2';
 
 const files = ref<File[]>([]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -214,7 +214,7 @@ function resetForm() {
 </script>
 
 <template>
-  <div style="background-color: #ffffff; min-height: 100vh; padding-top: 64px">
+  <div class="min-h-screen bg-white pt-16">
     <!-- Toast -->
     <Transition name="toast">
       <div v-if="toastMessage" class="toast">{{ toastMessage }}</div>
@@ -223,24 +223,15 @@ function resetForm() {
     <div class="contact-container">
       <!-- ── 성공 화면 ──────────────────────────────────────────── -->
       <template v-if="submitted">
-        <h1 class="contact-title" style="color: #212529; font-weight: 700; margin: 0 0 48px">
+        <h1 class="contact-title mx-0 mb-12 mt-0 font-bold text-[#212529]">
           {{ t('문의하기 제목') }}
         </h1>
-        <div class="contact-card" style="text-align: center; padding: 64px 40px">
+        <div class="contact-card px-10 py-16 text-center">
           <div
-            style="
-              width: 64px;
-              height: 64px;
-              border-radius: 50%;
-              background: #efe8fd;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              margin: 0 auto 24px;
-            "
+            class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-purple-005"
           >
             <svg
-              style="width: 28px; height: 28px; color: #863dff"
+              class="h-7 w-7 text-purple-040"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -249,21 +240,13 @@ function resetForm() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 style="font-size: 20px; font-weight: 700; color: #111417; margin: 0 0 12px">
+          <h2 class="mx-0 mb-3 mt-0 text-xl font-bold text-gray-099">
             {{ t('접수 완료') }}
           </h2>
-          <p
-            style="
-              font-size: 15px;
-              color: #6d7f92;
-              line-height: 1.7;
-              margin: 0;
-              white-space: pre-line;
-            "
-          >
+          <p class="m-0 whitespace-pre-line text-[15px] leading-[1.7] text-gray-050">
             {{ t('접수 안내') }}
           </p>
-          <button class="reset-btn" style="margin-top: 32px" @click="resetForm">
+          <button class="reset-btn mt-8" @click="resetForm">
             {{ t('새 문의 작성') }}
           </button>
         </div>
@@ -271,7 +254,7 @@ function resetForm() {
 
       <!-- ── 폼 화면 ─────────────────────────────────────────────── -->
       <template v-else>
-        <h1 class="contact-title" style="color: #212529; font-weight: 700">
+        <h1 class="contact-title font-bold text-[#212529]">
           {{ t('문의하기 제목') }}
         </h1>
 
@@ -337,7 +320,7 @@ function resetForm() {
               <svg
                 viewBox="0 0 16 16"
                 fill="none"
-                style="width: 16px; height: 16px; flex-shrink: 0; color: #6d7f92"
+                class="h-4 w-4 shrink-0 text-gray-050"
               >
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" />
                 <path
@@ -366,7 +349,7 @@ function resetForm() {
               <svg
                 viewBox="0 0 16 16"
                 fill="none"
-                style="width: 16px; height: 16px; flex-shrink: 0; color: #6d7f92"
+                class="h-4 w-4 shrink-0 text-gray-050"
               >
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" />
                 <path
@@ -397,7 +380,7 @@ function resetForm() {
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.5"
-                style="width: 24px; height: 24px; color: #868e96; flex-shrink: 0"
+                class="h-6 w-6 shrink-0 text-[#868e96]"
               >
                 <path
                   d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
@@ -415,16 +398,16 @@ function resetForm() {
                 ref="fileInputRef"
                 type="file"
                 multiple
-                style="display: none"
+                class="hidden"
                 @change="handleFileInput"
               />
             </div>
 
-            <p class="helper-text" style="margin-top: 6px">
+            <p class="helper-text mt-1.5">
               <svg
                 viewBox="0 0 16 16"
                 fill="none"
-                style="width: 16px; height: 16px; flex-shrink: 0; color: #6d7f92"
+                class="h-4 w-4 shrink-0 text-gray-050"
               >
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" />
                 <path
@@ -445,7 +428,7 @@ function resetForm() {
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.5"
-                  style="width: 16px; height: 16px; flex-shrink: 0; color: #868e96"
+                  class="h-4 w-4 shrink-0 text-[#868e96]"
                 >
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
                   <path d="M14 2v6h6" />
@@ -458,7 +441,7 @@ function resetForm() {
                     fill="none"
                     stroke="currentColor"
                     stroke-width="1.5"
-                    style="width: 14px; height: 14px"
+                    class="h-3.5 w-3.5"
                   >
                     <line x1="4" y1="4" x2="12" y2="12" />
                     <line x1="12" y1="4" x2="4" y2="12" />
@@ -469,7 +452,7 @@ function resetForm() {
           </div>
 
           <!-- 에러 메시지 -->
-          <p v-if="submitError" style="font-size: 14px; color: #e03131; margin: 0">
+          <p v-if="submitError" class="m-0 text-sm text-[#e03131]">
             {{ submitError }}
           </p>
 
@@ -483,12 +466,11 @@ function resetForm() {
             >
               <svg
                 v-if="submitting"
-                class="spin"
+                class="spin h-5 w-5"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
-                style="width: 20px; height: 20px"
               >
                 <path
                   d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"

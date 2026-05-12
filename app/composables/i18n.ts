@@ -426,7 +426,7 @@ const translations: Record<string, Record<Lang, string>> = {
 export function t(key: string): string {
   const entry = translations[key];
   if (!entry) {
-    if (import.meta.env.DEV) {
+    if (import.meta.dev) {
       console.warn(`[i18n] 미번역 키: "${key}" — i18n.ts에 번역을 추가하세요.`);
     }
     return key;

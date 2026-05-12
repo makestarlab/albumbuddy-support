@@ -1,21 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { CancelCircleMono, HelpMono } from '../icons';
-import { faqs } from '../lib/faqData';
-import { trackClick } from '../lib/faqClickTracker';
-import { fetchFaqItems } from '../lib/faqSupabase';
-import { t, currentLang } from '../i18n';
+import { faqs } from '~/lib/faqData';
+// 자동 import: ref, computed, watch, onMounted, onUnmounted, useFaqs, t, currentLang, trackFaqClick
+// 자동 import 컴포넌트: CancelCircleMono, HelpMono, NuxtLink
 
-const emit = defineEmits<{ navigate: [view: string] }>();
+useHead({ title: 'FAQ — AlbumBuddy Support' });
+
+const { data: notionItems, pending: notionLoading, error: notionFetchError } = await useFaqs();
+const notionError = computed(() => !!notionFetchError.value);
 
 const activeCategory = ref('All');
 const expandedSet = ref<Set<number>>(new Set());
 const searchQuery = ref('');
-
-// ── Notion 데이터 상태 ──────────────────────────────────────────
-const notionItems = ref<Awaited<ReturnType<typeof fetchFaqItems>>>([]);
-const notionLoading = ref(true);
-const notionError = ref(false);
 
 // ── 통합 표시 아이템 타입 ────────────────────────────────────────
 interface DisplayItem {
@@ -29,7 +24,7 @@ const isSearching = computed(() => searchQuery.value.trim().length > 0);
 
 // 현재 언어로 필터된 아이템 (DB order_index 순서 그대로)
 const langItems = computed<DisplayItem[]>(() => {
-  if (!notionError.value && notionItems.value.length > 0) {
+  if (!notionError.value && notionItems.value && notionItems.value.length > 0) {
     const lang = currentLang.value;
     return notionItems.value
       .map((item) => ({
@@ -101,17 +96,9 @@ function measureBar() {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true });
   requestAnimationFrame(measureBar);
-
-  try {
-    notionItems.value = await fetchFaqItems();
-  } catch {
-    notionError.value = true;
-  } finally {
-    notionLoading.value = false;
-  }
 });
 
 onUnmounted(() => {
@@ -132,8 +119,7 @@ function toggleFaq(idx: number) {
 
   if (isExpanding) {
     const item = filteredItems.value[idx];
-    // 클릭 즉시 누적 저장 (표시 순서는 1시간마다만 반영)
-    trackClick(item.id ?? item.q);
+    if (item?.id) trackFaqClick(item.id);
   }
 }
 
@@ -147,29 +133,18 @@ function highlight(text: string): string {
 </script>
 
 <template>
-  <div class="faq-root" style="background-color: #ffffff; min-height: 100vh; padding-top: 64px">
+  <div class="faq-root min-h-screen bg-white pt-16">
     <div class="faq-container">
       <!-- 1) Title + Contact Us button -->
       <div class="faq-header-top">
-        <h1 class="faq-title" style="color: #212529; font-weight: 700; margin: 0">FAQ</h1>
-        <button
-          class="contact-btn"
-          style="
-            background-color: transparent;
-            color: #111417;
-            border: 1.5px solid #c4cdd3;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          "
-          @click="emit('navigate', 'contact')"
+        <h1 class="faq-title m-0 font-bold text-[#212529]">FAQ</h1>
+        <NuxtLink
+          to="/contact"
+          class="contact-btn flex items-center gap-2 rounded-lg border-[1.5px] border-gray-020 bg-transparent font-bold text-gray-099 no-underline"
         >
-          <HelpMono style="width: 24px; height: 24px; flex-shrink: 0" />
+          <HelpMono class="h-6 w-6 shrink-0" />
           Contact Us
-        </button>
+        </NuxtLink>
       </div>
 
       <!-- 2) Search + Chips bar (sticky) -->
@@ -201,7 +176,7 @@ function highlight(text: string): string {
                 expandedSet = new Set();
               "
             >
-              <CancelCircleMono style="width: 20px; height: 20px" />
+              <CancelCircleMono class="h-5 w-5" />
             </button>
           </div>
 
@@ -209,11 +184,11 @@ function highlight(text: string): string {
             <button
               v-for="cat in categories"
               :key="cat"
-              class="faq-chip"
-              :style="
+              class="faq-chip border"
+              :class="
                 activeCategory === cat
-                  ? { backgroundColor: '#863dff', color: '#ffffff', border: '1px solid #863dff' }
-                  : { border: '1px solid #f1f3f5', backgroundColor: '#f1f3f5', color: '#212529' }
+                  ? 'border-purple-040 bg-purple-040 text-white'
+                  : 'border-[#f1f3f5] bg-[#f1f3f5] text-[#212529]'
               "
               @click="selectCategory(cat)"
             >
@@ -236,15 +211,13 @@ function highlight(text: string): string {
         <div v-for="(item, idx) in filteredItems" :key="item.id ?? idx" class="faq-item">
           <button class="faq-btn" @click="toggleFaq(idx)">
             <span
-              class="faq-q"
-              style="color: #212529; font-weight: 700"
+              class="faq-q font-bold text-[#212529]"
               v-html="'Q. ' + highlight(item.q)"
             />
             <div class="faq-icon">
               <svg
-                class="faq-chevron"
+                class="faq-chevron text-[#adb5bd]"
                 :class="expandedSet.has(idx) && 'faq-chevron-open'"
-                style="color: #adb5bd"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -256,17 +229,13 @@ function highlight(text: string): string {
           </button>
           <div v-if="expandedSet.has(idx)" class="faq-answer">
             <p
-              class="faq-a"
-              style="color: #868e96; font-weight: 700; margin: 0; white-space: pre-line"
+              class="faq-a m-0 whitespace-pre-line font-bold text-[#868e96]"
               v-html="'A. ' + highlight(item.a)"
             />
           </div>
         </div>
 
-        <p
-          v-if="filteredItems.length === 0"
-          style="color: #868e96; padding: 40px 0; text-align: center"
-        >
+        <p v-if="filteredItems.length === 0" class="py-10 text-center text-[#868e96]">
           {{ isSearching ? 'No results found.' : 'No articles in this category.' }}
         </p>
       </div>

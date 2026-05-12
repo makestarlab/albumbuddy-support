@@ -1,29 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { CancelCircleMono } from '../icons';
-import {
-  getNoticePosts,
-  getNoticeDetail,
-  filterPostsByLang,
-  type NoticePost,
-  type NoticeDetail,
-  type NoticeLang,
-} from '../lib/noticesSupabase';
-import { currentLang, t } from '../i18n';
+import type { NoticePost, NoticeDetail, NoticeLang } from '~/composables/useNotices';
+// 자동 import: ref, computed, watch, onMounted, onUnmounted, useRoute,
+//   useNoticePosts, fetchNoticeDetail, filterPostsByLang, currentLang, t, CancelCircleMono
 
-const props = defineProps<{ initialNotice?: string }>();
+useHead({ title: '공지사항 — AlbumBuddy Support' });
+
+const route = useRoute();
 
 const NOTICE_KEYWORDS: Record<string, string[]> = {
   terms: ['이용약관', 'Term of Service', 'Terms of Service', '利用規約', '服务条款'],
   privacy: ['개인정보', 'Privacy Policy', '個人情報', 'プライバシー', '隐私政策'],
 };
 
-const posts = ref<NoticePost[]>([]);
+const { data: postsData, pending: loading, error: fetchError } = await useNoticePosts();
+const posts = computed<NoticePost[]>(() => postsData.value ?? []);
+const error = computed(() => !!fetchError.value);
+
 const selectedDetail = ref<NoticeDetail | null>(null);
 const currentPost = ref<NoticePost | null>(null);
-const loading = ref(true);
 const detailLoading = ref(false);
-const error = ref(false);
 const searchQuery = ref('');
 const activeCategory = ref('All');
 
@@ -69,30 +64,23 @@ function measureBar() {
   }
 }
 
-onMounted(async () => {
-  try {
-    posts.value = await getNoticePosts();
-  } catch (e) {
-    error.value = true;
-    console.warn('[AlbumBuddy Notices] Notion 연동 실패:', e);
-  } finally {
-    loading.value = false;
-  }
-  // initialNotice가 있으면 해당 공지 자동 오픈
-  if (props.initialNotice && NOTICE_KEYWORDS[props.initialNotice]) {
-    const keywords = NOTICE_KEYWORDS[props.initialNotice];
-    const visible = filterPostsByLang(posts.value, currentLang.value as NoticeLang);
-    const match = visible.find((p) =>
-      keywords.some((kw) => p.title.includes(kw)),
-    );
-    if (match) {
-      await openPost(match);
-    }
-  }
+async function autoOpenFromQuery() {
+  const type = route.query.type as string | undefined;
+  if (!type || !NOTICE_KEYWORDS[type]) return;
+  const keywords = NOTICE_KEYWORDS[type];
+  const visible = filterPostsByLang(posts.value, currentLang.value as NoticeLang);
+  const match = visible.find((p) => keywords.some((kw) => p.title.includes(kw)));
+  if (match) await openPost(match);
+}
 
+onMounted(async () => {
+  await autoOpenFromQuery();
   window.addEventListener('scroll', handleScroll, { passive: true });
   requestAnimationFrame(measureBar);
 });
+
+// query 변경 (예: footer에서 다른 공지로 이동) 감지
+watch(() => route.query.type, autoOpenFromQuery);
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
@@ -102,19 +90,19 @@ async function openPost(post: NoticePost) {
   currentPost.value = post;
   detailLoading.value = true;
   try {
-    selectedDetail.value = await getNoticeDetail(post.slug);
+    selectedDetail.value = await fetchNoticeDetail(post.slug);
   } catch {
     selectedDetail.value = { title: post.title, date: post.date, contentHtml: '' };
   } finally {
     detailLoading.value = false;
   }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function goBack() {
   selectedDetail.value = null;
   currentPost.value = null;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // 상세 보기 중 언어 변경 시 같은 그룹의 새 언어 버전으로 재fetch
@@ -128,40 +116,24 @@ watch(currentLang, async () => {
 </script>
 
 <template>
-  <div style="background-color: #ffffff; min-height: 100vh; padding-top: 64px">
+  <div class="min-h-screen bg-white pt-16">
     <!-- ── Detail View ─────────────────────────────────────────── -->
     <template v-if="selectedDetail">
       <div class="board-container">
-        <h1 class="board-title" style="color: #111417; font-weight: 700">
+        <h1 class="board-title font-bold text-gray-099">
           {{ t('Notices') }}
         </h1>
 
-        <div v-if="detailLoading" style="padding: 48px 0; text-align: center; color: #adb5bd">
+        <div v-if="detailLoading" class="py-12 text-center text-[#adb5bd]">
           불러오는 중...
         </div>
         <template v-else>
           <div class="board-detail-content">
             <div class="board-post-header">
-              <h2
-                style="
-                  font-size: 20px;
-                  font-weight: 700;
-                  line-height: 32px;
-                  color: #212529;
-                  margin: 0;
-                "
-              >
+              <h2 class="m-0 text-xl font-bold leading-8 text-[#212529]">
                 {{ selectedDetail.title }}
               </h2>
-              <p
-                style="
-                  font-size: 14px;
-                  font-weight: 600;
-                  line-height: 20px;
-                  color: #868e96;
-                  margin: 0;
-                "
-              >
+              <p class="m-0 text-sm font-semibold leading-5 text-[#868e96]">
                 {{ selectedDetail.date }}
               </p>
             </div>
@@ -171,7 +143,7 @@ watch(currentLang, async () => {
               class="board-post-body"
               v-html="selectedDetail.contentHtml"
             />
-            <p v-else style="padding: 32px 0; color: #868e96; font-size: 15px">
+            <p v-else class="py-8 text-[15px] text-[#868e96]">
               내용을 불러오지 못했습니다.
             </p>
 
@@ -186,7 +158,7 @@ watch(currentLang, async () => {
     <!-- ── List View ──────────────────────────────────────────── -->
     <template v-else>
       <div class="board-container">
-        <h1 class="board-title" style="color: #111417; font-weight: 700">
+        <h1 class="board-title font-bold text-gray-099">
           {{ t('Notices') }}
         </h1>
 
@@ -212,7 +184,7 @@ watch(currentLang, async () => {
                 @input="searchQuery = ($event.target as HTMLInputElement).value"
               />
               <button v-if="searchQuery" class="faq-search-clear" @click="searchQuery = ''">
-                <CancelCircleMono style="width: 20px; height: 20px" />
+                <CancelCircleMono class="h-5 w-5" />
               </button>
             </div>
 
@@ -220,11 +192,11 @@ watch(currentLang, async () => {
               <button
                 v-for="cat in categories"
                 :key="cat"
-                class="notices-chip"
-                :style="
+                class="notices-chip border"
+                :class="
                   activeCategory === cat
-                    ? { backgroundColor: '#863dff', color: '#ffffff', border: '1px solid #863dff' }
-                    : { border: '1px solid #f1f3f5', backgroundColor: '#f1f3f5', color: '#212529' }
+                    ? 'border-purple-040 bg-purple-040 text-white'
+                    : 'border-[#f1f3f5] bg-[#f1f3f5] text-[#212529]'
                 "
                 @click="activeCategory = cat"
               >
@@ -237,11 +209,11 @@ watch(currentLang, async () => {
         <!-- Spacer when bar is fixed -->
         <div v-if="isStuck" :style="{ height: stickyHeight + 'px' }" />
 
-        <div v-if="loading" style="padding: 48px 0; text-align: center; color: #adb5bd">
+        <div v-if="loading" class="py-12 text-center text-[#adb5bd]">
           불러오는 중...
         </div>
 
-        <p v-else-if="error" style="padding: 40px 0; color: #868e96; font-size: 15px">
+        <p v-else-if="error" class="py-10 text-[15px] text-[#868e96]">
           공지사항을 불러오지 못했습니다.
         </p>
 
@@ -253,42 +225,25 @@ watch(currentLang, async () => {
               class="board-post-item"
               @click="openPost(post)"
             >
-              <h3
-                class="board-post-title"
-                style="color: #111417; font-weight: 700; margin: 0 0 4px 0"
-              >
+              <h3 class="board-post-title mx-0 mb-1 mt-0 font-bold text-gray-099">
                 {{ post.title }}
               </h3>
-              <p
-                style="
-                  font-size: 14px;
-                  font-weight: 600;
-                  line-height: 20px;
-                  color: #6d7f92;
-                  margin: 0;
-                "
-              >
+              <p class="m-0 text-sm font-semibold leading-5 text-gray-050">
                 {{ post.date }}
               </p>
             </article>
           </div>
 
-          <p
-            v-if="filteredPosts.length === 0"
-            style="color: #868e96; padding: 40px 0; text-align: center"
-          >
+          <p v-if="filteredPosts.length === 0" class="py-10 text-center text-[#868e96]">
             {{ isSearching ? 'No results found.' : '게시글이 없습니다.' }}
           </p>
 
           <div v-if="filteredPosts.length > 0 && !isSearching" class="board-pagination">
-            <button class="pagination-btn" style="color: #adb5bd">&lt;</button>
-            <button
-              class="pagination-btn"
-              style="background-color: #212529; color: #ffffff; font-weight: 700"
-            >
+            <button class="pagination-btn text-[#adb5bd]">&lt;</button>
+            <button class="pagination-btn bg-[#212529] font-bold text-white">
               1
             </button>
-            <button class="pagination-btn" style="color: #adb5bd">&gt;</button>
+            <button class="pagination-btn text-[#adb5bd]">&gt;</button>
           </div>
         </template>
       </div>

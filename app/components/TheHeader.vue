@@ -1,14 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { currentLang, langLabels, setLang, t, type Lang } from '../i18n';
-
-const props = defineProps<{
-  currentView: string;
-}>();
-
-const emit = defineEmits<{
-  navigate: [view: string];
-}>();
+const route = useRoute();
 
 const isScrolled = ref(false);
 const isMobileMenuOpen = ref(false);
@@ -18,17 +9,16 @@ const langKeys = Object.keys(langLabels) as Lang[];
 const selectedLangLabel = computed(() => langLabels[currentLang.value]);
 
 const navItems = [
-  { key: 'notices', labelKey: 'Notices' },
-  { key: 'faq', labelKey: 'FAQ' },
-  { key: 'contact', labelKey: 'Contact Us' },
+  { key: 'notices', to: '/notices', labelKey: 'Notices' },
+  { key: 'faq', to: '/faq', labelKey: 'FAQ' },
+  { key: 'contact', to: '/contact', labelKey: 'Contact Us' },
 ];
 
-// Figma 로고 에셋 (node 4-4757 desktop / 46-2354 mobile)
-const imgLogo = import.meta.env.BASE_URL + 'images/logo.png';
+const imgLogo = '/images/logo.png';
 
-// GNB는 홈 뷰 + 스크롤 전에만 투명(흰 텍스트), 나머지는 흰 배경(다크 텍스트)
+// 홈 + 스크롤 전에만 투명(흰 텍스트)
 const isTransparent = computed(
-  () => !isScrolled.value && props.currentView === 'home' && !isMobileMenuOpen.value,
+  () => !isScrolled.value && route.path === '/' && !isMobileMenuOpen.value,
 );
 
 function handleScroll() {
@@ -37,50 +27,49 @@ function handleScroll() {
 
 function toggleMobileMenu() {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
-  document.body.style.overflow = isMobileMenuOpen.value ? 'hidden' : '';
+  if (import.meta.client) {
+    document.body.style.overflow = isMobileMenuOpen.value ? 'hidden' : '';
+  }
 }
 
-function navigate(view: string) {
-  emit('navigate', view);
+function closeMobileMenu() {
   isMobileMenuOpen.value = false;
-  document.body.style.overflow = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (import.meta.client) document.body.style.overflow = '';
 }
+
+// 라우트 변경 시 모바일 메뉴 닫기
+watch(() => route.fullPath, closeMobileMenu);
 
 onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }));
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
-  document.body.style.overflow = '';
+  if (import.meta.client) document.body.style.overflow = '';
 });
 </script>
 
 <template>
-  <!-- position: fixed so it overlays the hero -->
   <header class="gnb" :class="isTransparent ? 'gnb--transparent' : 'gnb--solid'">
     <div class="gnb-inner">
-      <!-- Logo: icon + "Customer Support" text -->
-      <button class="gnb-logo-btn" @click="navigate('home')">
-        <!-- Desktop: 40×40 icon + gap 8px -->
-        <img :src="imgLogo" alt="" class="gnb-logo-icon gnb-logo-icon--desktop" />
-        <!-- Mobile: 32×32 icon + gap 4px -->
-        <img :src="imgLogo" alt="" class="gnb-logo-icon gnb-logo-icon--mobile" />
+      <NuxtLink to="/" class="gnb-logo-btn">
+        <NuxtImg :src="imgLogo" alt="" class="gnb-logo-icon gnb-logo-icon--desktop" />
+        <NuxtImg :src="imgLogo" alt="" class="gnb-logo-icon gnb-logo-icon--mobile" />
         <span class="gnb-logo-text">Customer Support</span>
-      </button>
+      </NuxtLink>
 
       <!-- Desktop Nav -->
       <nav class="desktop-nav">
-        <button
+        <NuxtLink
           v-for="item in navItems"
           :key="item.key"
+          :to="item.to"
           class="nav-btn"
-          :class="currentView === item.key ? 'nav-btn--active' : ''"
-          @click="navigate(item.key)"
+          active-class="nav-btn--active"
         >
           {{ t(item.labelKey) }}
-        </button>
+        </NuxtLink>
 
         <!-- Language Dropdown -->
-        <div style="position: relative">
+        <div class="relative">
           <button class="nav-btn lang-btn" @click="isLangOpen = !isLangOpen">
             {{ selectedLangLabel }}
             <svg
@@ -114,7 +103,7 @@ onUnmounted(() => {
                 height="14"
                 viewBox="0 0 14 14"
                 fill="none"
-                style="flex-shrink: 0; color: #863dff"
+                class="shrink-0 text-purple-040"
               >
                 <path
                   d="M2 7l3.5 3.5L12 3"
@@ -132,7 +121,7 @@ onUnmounted(() => {
       <!-- Mobile Hamburger -->
       <button class="mobile-hamburger" @click="toggleMobileMenu">
         <svg
-          style="width: 24px; height: 24px"
+          class="h-6 w-6"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -154,17 +143,17 @@ onUnmounted(() => {
     <!-- Mobile Menu -->
     <div v-if="isMobileMenuOpen" class="mobile-menu">
       <div class="mobile-menu-backdrop" @click="toggleMobileMenu" />
-      <div style="display: flex; flex-direction: column; gap: 4px; padding: 24px 24px 0">
-        <button
+      <div class="flex flex-col gap-1 px-6 pt-6">
+        <NuxtLink
           v-for="item in navItems"
           :key="item.key"
+          :to="item.to"
           class="mobile-menu-item"
-          @click="navigate(item.key)"
         >
           {{ t(item.labelKey) }}
-        </button>
+        </NuxtLink>
       </div>
-      <div style="display: flex; flex-direction: column; padding: 24px 24px 0">
+      <div class="flex flex-col px-6 pt-6">
         <p class="mobile-lang-label">Language</p>
         <button
           v-for="lang in langKeys"
@@ -175,7 +164,7 @@ onUnmounted(() => {
           {{ langLabels[lang] }}
           <svg
             v-if="currentLang === lang"
-            style="width: 20px; height: 20px; color: #863dff"
+            class="h-5 w-5 text-purple-040"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -190,7 +179,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ── Base GNB ── */
 .gnb {
   position: fixed;
   top: 0;
@@ -201,20 +189,14 @@ onUnmounted(() => {
     background-color 0.35s ease,
     box-shadow 0.35s ease;
 }
-
-/* 홈 + 스크롤 전: 완전 투명, 텍스트 흰색 */
 .gnb--transparent {
   background-color: transparent;
   box-shadow: none;
 }
-
-/* 스크롤 후 or 다른 페이지: 흰 배경 */
 .gnb--solid {
   background-color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-
-/* ── Inner container ── */
 .gnb-inner {
   max-width: 1440px;
   margin: 0 auto;
@@ -230,16 +212,11 @@ onUnmounted(() => {
     padding: 14px 120px;
   }
 }
-
-/* ── Logo button ── */
 .gnb-logo-btn {
   display: flex;
   align-items: center;
   gap: 4px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
+  text-decoration: none;
   flex-shrink: 0;
 }
 @media (min-width: 768px) {
@@ -247,8 +224,6 @@ onUnmounted(() => {
     gap: 8px;
   }
 }
-
-/* ── Logo icon ── */
 .gnb-logo-icon {
   display: block;
   flex-shrink: 0;
@@ -271,8 +246,6 @@ onUnmounted(() => {
     display: block;
   }
 }
-
-/* ── Logo text ── */
 .gnb-logo-text {
   font-size: 24px;
   font-weight: 700;
@@ -287,10 +260,6 @@ onUnmounted(() => {
 .gnb--solid .gnb-logo-text {
   color: #111417;
 }
-
-/* 아이콘은 투명/solid 상태 모두 원본 컬러 유지 (보라색 로고 그대로) */
-
-/* ── Desktop Nav ── */
 .desktop-nav {
   display: none;
   align-items: center;
@@ -301,8 +270,6 @@ onUnmounted(() => {
     display: flex;
   }
 }
-
-/* ── Nav Buttons ── */
 .nav-btn {
   display: flex;
   align-items: center;
@@ -329,28 +296,16 @@ onUnmounted(() => {
 .gnb--solid .nav-btn {
   color: #111417;
 }
-
-/* active 표시 */
 .nav-btn--active {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-
-/* hover: 투명 상태에서는 흰색 반투명, solid에서는 다크 반투명 */
 .gnb--transparent .nav-btn:hover {
   background-color: rgba(255, 255, 255, 0.15);
 }
 .gnb--solid .nav-btn:hover {
   background-color: rgba(17, 20, 23, 0.06);
 }
-.gnb--transparent .nav-btn:active {
-  background-color: rgba(255, 255, 255, 0.25);
-}
-.gnb--solid .nav-btn:active {
-  background-color: rgba(17, 20, 23, 0.12);
-}
-
-/* ── Chevron Icon ── */
 .chevron-icon {
   width: 16px;
   height: 16px;
@@ -360,18 +315,14 @@ onUnmounted(() => {
 .chevron-icon--open {
   transform: rotate(180deg);
 }
-
-/* ── Language Dropdown ── */
 .lang-btn {
   white-space: nowrap;
 }
-
 .lang-backdrop {
   position: fixed;
   inset: 0;
   z-index: 39;
 }
-
 .lang-dropdown {
   position: absolute;
   right: 0;
@@ -384,7 +335,6 @@ onUnmounted(() => {
   z-index: 40;
   overflow: hidden;
 }
-
 .lang-option {
   display: flex;
   align-items: center;
@@ -406,8 +356,6 @@ onUnmounted(() => {
 .lang-option:hover:not(.lang-option--active) {
   background-color: #f8f9fa;
 }
-
-/* ── Mobile Hamburger ── */
 .mobile-hamburger {
   display: flex;
   align-items: center;
@@ -426,14 +374,11 @@ onUnmounted(() => {
 .gnb--solid .mobile-hamburger {
   color: #111417;
 }
-
 @media (min-width: 768px) {
   .mobile-hamburger {
     display: none;
   }
 }
-
-/* ── Mobile Menu ── */
 .mobile-menu {
   position: fixed;
   inset: 0;
@@ -457,9 +402,7 @@ onUnmounted(() => {
   font-weight: 700;
   line-height: 32px;
   color: #212529;
-  border: none;
-  background: transparent;
-  cursor: pointer;
+  text-decoration: none;
   padding: 0;
   width: 100%;
 }

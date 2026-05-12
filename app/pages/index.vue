@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { t, currentLang } from '../i18n';
-import { faqs, popularityOrder, categoryKeyMap } from '../lib/faqData';
-import { fetchFaqItems } from '../lib/faqSupabase';
+import { faqs, popularityOrder, categoryKeyMap } from '~/lib/faqData';
+import type { FaqNotionItem } from '~/composables/useFaqs';
+// 자동 import: ref, computed, watch, onMounted, onUnmounted, useFaqs, t, currentLang, NuxtLink, NuxtImg
 
-const emit = defineEmits<{ navigate: [view: string] }>();
+useHead({ title: 'AlbumBuddy Support' });
 
-// ── Notion FAQ 데이터 ──────────────────────────────────────────
-import type { FaqNotionItem } from '../lib/faqSupabase';
-const notionFaqItems = ref<FaqNotionItem[]>([]);
+const { data: notionFaqItemsData } = await useFaqs();
+const notionFaqItems = computed<FaqNotionItem[]>(() => notionFaqItemsData.value ?? []);
 
 // ── 로컬 폴백 (Supabase 응답 없을 때) ──────────────────────────
 function buildLocalTopFaqs() {
@@ -64,11 +62,12 @@ function toggleFaq(idx: number) {
 // 언어 변경 시 top FAQ 재계산
 watch(currentLang, refreshTopFaqs);
 
-onMounted(async () => {
-  notionFaqItems.value = await fetchFaqItems().catch(() => [] as FaqNotionItem[]);
-  refreshTopFaqs();
-  topFaqsLoading.value = false;
-});
+// useFaqs는 await로 받아왔으니 mount 시점에 이미 채워져 있음
+refreshTopFaqs();
+topFaqsLoading.value = false;
+
+// 언어 변경 시 + 데이터 변경 시 재계산
+watch(notionFaqItems, refreshTopFaqs);
 
 const proxySteps = computed(() => [
   t('구매대행 step1'),
@@ -84,22 +83,56 @@ const shippingSteps = computed(() => [
   t('배송대행 step4'),
 ]);
 
-// ── Figma asset URLs (fetched 2026-04-07, valid 7 days) ──────────
-// Hero
-const imgHeroBg = import.meta.env.BASE_URL + 'images/hero-bg.png'; // desktop
-const imgHeroBgMobile = import.meta.env.BASE_URL + 'images/phone-hero-bg.png';  // mobile
-const imgLogo = import.meta.env.BASE_URL + 'images/logo.png';
+// ── 이미지 경로 ─────────────────────────────────────────────────
+const imgHeroBg = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/320dc473-b790-4a77-8c05-7cfa8639ea8e.png';
+const imgHeroBgMobile = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/5787dcb2-5dfa-4b6c-92cb-0498dc5b5abb.png';
+const imgLogo = '/images/logo.png';
 
-// Features – desktop (node 35:15829, composite images — no overlay needed)
-const imgPhone1Desktop = import.meta.env.BASE_URL + 'images/proxy.png'; // 구매대행 616×915
-const imgPhone2Desktop = import.meta.env.BASE_URL + 'images/shipping.png'; // 배송대행 440×894
+const imgPhone1Desktop = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/4c4e46df-c105-4964-b620-aad96e70d506.png';
+const imgPhone2Desktop =
+      'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/8a41cb3e-044d-4a2b-b144-89eba640f500.png';
 
-// Features – mobile (로컬 에셋)
-const imgPhone1Mobile = import.meta.env.BASE_URL + 'images/phone-proxy.png'; // 구매대행 모바일
-const imgPhone2Mobile = import.meta.env.BASE_URL + 'images/phone-shipping.png'; // 배송대행 모바일
+const imgPhone1Mobile = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/46f160ca-0469-46dc-b6e2-e5ba9bcf7d48.png';
+const imgPhone2Mobile = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/10c51467-3606-470a-99f9-934ec359f4d0.png'; // 배송대행 440×894
 
-// CTA
-const imgCta = import.meta.env.BASE_URL + 'images/cta.png'; //
+const imgCta =
+  'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/a3f0e223-0dbf-4f54-a04d-ed8d22a4daa1.png';
+
+// ── Hero LCP preload (NuxtImg는 srcset 자동 생성, 여기선 첫 페인트용 preload만 추가)
+const img = useImage();
+
+useHead({
+  link: () => {
+    const desktopWidths = [1024, 1280, 1536, 1920];
+    const mobileWidths = [375, 640, 828];
+
+    const desktopSrcset = desktopWidths
+      .map((w) => `${img(imgHeroBg, { width: w, quality: 75 })} ${w}w`)
+      .join(', ');
+    const mobileSrcset = mobileWidths
+      .map((w) => `${img(imgHeroBgMobile, { width: w, quality: 75 })} ${w}w`)
+      .join(', ');
+
+    return [
+      {
+        rel: 'preload',
+        as: 'image',
+        imagesrcset: desktopSrcset,
+        imagesizes: '100vw',
+        media: '(min-width: 768px)',
+        fetchpriority: 'high',
+      },
+      {
+        rel: 'preload',
+        as: 'image',
+        imagesrcset: mobileSrcset,
+        imagesizes: '100vw',
+        media: '(max-width: 767px)',
+        fetchpriority: 'high',
+      },
+    ];
+  },
+});
 
 function scrollToStats() {
   document.getElementById('stats-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -187,22 +220,46 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div style="background-color: #ffffff; overflow-x: hidden">
+  <div class="overflow-x-hidden bg-white">
     <!-- ── Hero ─────────────────────────────────────────────────── -->
     <section class="hero-section">
-      <!-- Background -->
-      <div class="hero-bg hero-bg--desktop" :style="`background-image:url(${imgHeroBg})`" />
-      <div class="hero-bg hero-bg--mobile" :style="`background-image:url(${imgHeroBgMobile})`" />
+      <!-- Background (NuxtImg + LCP preload via useHead) -->
+      <NuxtImg
+        :src="imgHeroBg"
+        alt=""
+        class="hero-bg hero-bg--desktop"
+        sizes="100vw md:1024px lg:1280px xl:1920px"
+        fetchpriority="high"
+      />
+      <NuxtImg
+        :src="imgHeroBgMobile"
+        alt=""
+        class="hero-bg hero-bg--mobile"
+        sizes="100vw"
+        fetchpriority="high"
+      />
       <!-- Flat dark overlay -->
       <div
-        style="position: absolute; inset: 0; background: rgba(0, 0, 0, 0.2); pointer-events: none"
+        class="pointer-events-none absolute inset-0 bg-black/20"
       />
 
       <!-- Bottom gradient + content (295px desktop / 254px mobile) -->
       <div class="hero-bottom">
         <!-- Logo: fixed dimensions, object-fit:contain prevents squish -->
-        <img class="hero-logo hero-logo--desktop" :src="imgLogo" alt="AlbumBuddy" />
-        <img class="hero-logo hero-logo--mobile" :src="imgLogo" alt="AlbumBuddy" />
+        <NuxtImg
+          class="hero-logo hero-logo--desktop"
+          :src="imgLogo"
+          alt="AlbumBuddy"
+          fetchpriority="high"
+          sizes="262px md:523px"
+        />
+        <NuxtImg
+          class="hero-logo hero-logo--mobile"
+          :src="imgLogo"
+          alt="AlbumBuddy"
+          fetchpriority="high"
+          sizes="262px"
+        />
 
         <p class="hero-subtitle">
           {{ t('hero-subtitle') }}
@@ -214,7 +271,7 @@ onUnmounted(() => {
             fill="none"
             stroke="white"
             stroke-width="2"
-            style="width: 24px; height: 24px"
+            class="h-6 w-6"
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>
@@ -260,18 +317,24 @@ onUnmounted(() => {
         <div class="feature-row">
           <!-- ── MOBILE phone mockup ── -->
           <div class="phone-mobile-wrap">
-            <img
+            <NuxtImg
               :src="imgPhone1Mobile"
               alt=""
               loading="lazy"
-              decoding="async"
-              style="width: 100%; display: block"
+              sizes="100vw md:640px"
+              class="block w-full"
             />
           </div>
 
           <!-- ── DESKTOP phone mockup: composite image, scales below 1440px ── -->
           <div class="phone-desktop-wrap proxy-desktop-wrap">
-            <img :src="imgPhone1Desktop" alt="" class="desktop-phone-img" loading="lazy" decoding="async" />
+            <NuxtImg
+              :src="imgPhone1Desktop"
+              alt=""
+              class="desktop-phone-img"
+              loading="lazy"
+              sizes="md:616px lg:616px"
+            />
           </div>
 
           <!-- Content -->
@@ -319,21 +382,23 @@ onUnmounted(() => {
         <div class="feature-row feature-row--reversed">
           <!-- ── MOBILE phone mockup (rendered first → top on mobile) ── -->
           <div class="phone-mobile-wrap shipping-mobile-phone">
-            <img
+            <NuxtImg
               :src="imgPhone2Mobile"
               alt=""
               loading="lazy"
-              decoding="async"
-              style="
-                width: 100%;
-                display: block;
-              "
+              sizes="100vw md:640px"
+              class="block w-full"
             />
           </div>
 
           <!-- ── DESKTOP phone mockup: percentage-based ── -->
           <div class="phone-desktop-wrap shipping-desktop-wrap">
-            <img :src="imgPhone2Desktop" alt="" class="desktop-phone-img" loading="lazy" decoding="async" />
+            <NuxtImg
+              :src="imgPhone2Desktop"
+              alt=""
+              class="desktop-phone-img"
+              loading="lazy"
+            />
           </div>
 
           <!-- Content -->
@@ -414,25 +479,37 @@ onUnmounted(() => {
               </svg>
             </button>
             <div v-if="expandedFaq.has(i)" class="faq-home-answer">
-              <p style="margin: 0; white-space: pre-line">{{ faq.a }}</p>
+              <p class="m-0 whitespace-pre-line">{{ faq.a }}</p>
             </div>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: center; margin-top: 32px">
-          <button class="faq-more-btn" @click="emit('navigate', 'faq')">
+        <div class="mt-8 flex justify-center">
+          <NuxtLink to="/faq" class="faq-more-btn">
             {{ t('더 보러 가기') }}
-          </button>
+          </NuxtLink>
         </div>
       </div>
     </section>
 
     <!-- ── CTA ───────────────────────────────────────────────────── -->
     <section class="cta-section">
-      <div class="cta-bg cta-bg--desktop" :style="`background-image:url(${imgCta})`" />
-      <div class="cta-bg cta-bg--mobile" :style="`background-image:url(${imgCta})`" />
+      <NuxtImg
+        :src="imgCta"
+        alt=""
+        class="cta-bg cta-bg--desktop"
+        sizes="100vw md:1024px lg:1280px"
+        loading="lazy"
+      />
+      <NuxtImg
+        :src="imgCta"
+        alt=""
+        class="cta-bg cta-bg--mobile"
+        sizes="100vw"
+        loading="lazy"
+      />
       <div
-        style="position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); pointer-events: none"
+        class="pointer-events-none absolute inset-0 bg-black/50"
       />
       <div class="cta-content">
         <p class="cta-text">
@@ -469,8 +546,10 @@ onUnmounted(() => {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: 70% top;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% top;
 }
 .hero-bg--desktop {
   display: none;
@@ -935,8 +1014,10 @@ onUnmounted(() => {
 .cta-bg {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 .cta-bg--desktop {
   display: none;
@@ -993,7 +1074,7 @@ onUnmounted(() => {
 @media (min-width: 768px) {
   /* Hero */
   .hero-bg {
-    background-position: center top;
+    object-position: center top;
   }
   .hero-bg--desktop {
     display: block;
