@@ -85,7 +85,6 @@ const shippingSteps = computed(() => [
 
 // ── 이미지 경로 ─────────────────────────────────────────────────
 const imgHeroBg = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/320dc473-b790-4a77-8c05-7cfa8639ea8e.png';
-const imgHeroBgMobile = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/5787dcb2-5dfa-4b6c-92cb-0498dc5b5abb.png';
 const imgLogo = '/images/logo.png';
 
 const imgPhone1Desktop = 'https://warwiqpssw4f1yzy.public.blob.vercel-storage.com/media/2026/05/4c4e46df-c105-4964-b620-aad96e70d506.png';
@@ -103,31 +102,17 @@ const img = useImage();
 
 useHead({
   link: () => {
-    const desktopWidths = [1024, 1280, 1536, 1920];
-    const mobileWidths = [375, 640, 828];
-
-    const desktopSrcset = desktopWidths
+    const widths = [375, 640, 828, 1024, 1280, 1536, 1920];
+    const srcset = widths
       .map((w) => `${img(imgHeroBg, { width: w, quality: 75 })} ${w}w`)
-      .join(', ');
-    const mobileSrcset = mobileWidths
-      .map((w) => `${img(imgHeroBgMobile, { width: w, quality: 75 })} ${w}w`)
       .join(', ');
 
     return [
       {
         rel: 'preload',
         as: 'image',
-        imagesrcset: desktopSrcset,
+        imagesrcset: srcset,
         imagesizes: '100vw',
-        media: '(min-width: 768px)',
-        fetchpriority: 'high',
-      },
-      {
-        rel: 'preload',
-        as: 'image',
-        imagesrcset: mobileSrcset,
-        imagesizes: '100vw',
-        media: '(max-width: 767px)',
         fetchpriority: 'high',
       },
     ];
@@ -227,15 +212,8 @@ onUnmounted(() => {
       <NuxtImg
         :src="imgHeroBg"
         alt=""
-        class="hero-bg hero-bg--desktop"
+        class="hero-bg"
         sizes="100vw md:1024px lg:1280px xl:1920px"
-        fetchpriority="high"
-      />
-      <NuxtImg
-        :src="imgHeroBgMobile"
-        alt=""
-        class="hero-bg hero-bg--mobile"
-        sizes="100vw"
         fetchpriority="high"
       />
       <!-- Flat dark overlay -->
@@ -539,7 +517,7 @@ onUnmounted(() => {
 /* ── Hero ─────────────────────────────────────────────────────── */
 .hero-section {
   position: relative;
-  min-height: 100svh;
+  min-height: 80svh;
   overflow: hidden;
 }
 
@@ -550,12 +528,6 @@ onUnmounted(() => {
   height: 100%;
   object-fit: cover;
   object-position: 70% top;
-}
-.hero-bg--desktop {
-  display: none;
-}
-.hero-bg--mobile {
-  display: block;
 }
 
 /* Bottom 254px (mobile) / 295px (desktop): gradient + logo + text + btn */
@@ -1075,12 +1047,6 @@ onUnmounted(() => {
   /* Hero */
   .hero-bg {
     object-position: center top;
-  }
-  .hero-bg--desktop {
-    display: block;
-  }
-  .hero-bg--mobile {
-    display: none;
   }
 
   .hero-bottom {
