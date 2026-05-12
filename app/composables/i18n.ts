@@ -173,16 +173,22 @@ const translations: Record<string, Record<Lang, string>> = {
     'zh-CN': '拖拽文件到此处或点击上传',
   },
   '파일 크기 안내': {
-    ko: '파일당 최대 50MB까지 업로드할 수 있습니다.',
-    en: 'Maximum file size: 50MB per file.',
-    ja: '1ファイルあたり最大50MBまでアップロードできます。',
-    'zh-CN': '每个文件最大支持上传 50MB。',
+    ko: '파일당 최대 50MB, 최대 5개까지 업로드할 수 있습니다.',
+    en: 'Up to 5 files, 50MB each.',
+    ja: '1ファイル最大50MB、最大5ファイルまでアップロードできます。',
+    'zh-CN': '每个文件最大 50MB,最多可上传 5 个。',
   },
   '파일 용량 초과': {
     ko: '파일 용량을 확인해주세요. (최대 50MB)',
     en: 'Please check the file size. (Max 50MB)',
     ja: 'ファイルサイズをご確認ください。（最大50MB）',
     'zh-CN': '请检查文件大小。（最大50MB）',
+  },
+  '파일 개수 초과': {
+    ko: '파일은 최대 5개까지 첨부할 수 있습니다.',
+    en: 'You can attach up to 5 files.',
+    ja: 'ファイルは最大5つまで添付できます。',
+    'zh-CN': '最多可附加 5 个文件。',
   },
   제출: { ko: '제출', en: 'Submit', ja: '送信', 'zh-CN': '提交' },
   '접수 완료': {

@@ -106,7 +106,11 @@ const isValid = computed(
 );
 
 // ── 파일 처리 ──────────────────────────────────────────────────
+const MAX_FILES = 5;
+const fileSlotsFull = computed(() => files.value.length >= MAX_FILES);
+
 function openFilePicker() {
+  if (fileSlotsFull.value) return;
   fileInputRef.value?.click();
 }
 
@@ -118,6 +122,7 @@ function handleFileInput(e: Event) {
 
 function handleDrop(e: DragEvent) {
   isDragging.value = false;
+  if (fileSlotsFull.value) return;
   if (e.dataTransfer?.files) addFiles(Array.from(e.dataTransfer.files));
 }
 
@@ -128,7 +133,8 @@ function addFiles(newFiles: File[]) {
     newFiles = newFiles.filter((f) => f.size <= MAX_FILE_SIZE);
   }
   const merged = [...files.value, ...newFiles];
-  files.value = merged.slice(0, 10);
+  if (merged.length > MAX_FILES) showToast(t('파일 개수 초과'));
+  files.value = merged.slice(0, MAX_FILES);
 }
 
 function removeFile(idx: number) {
@@ -421,10 +427,14 @@ function resetForm() {
             <label class="field-label">{{ t('파일 첨부') }}</label>
             <div
               class="file-drop-zone"
-              :class="{ 'file-drop-zone--dragging': isDragging }"
+              :class="{
+                'file-drop-zone--dragging': isDragging && !fileSlotsFull,
+                'file-drop-zone--disabled': fileSlotsFull,
+              }"
+              :aria-disabled="fileSlotsFull"
               @click="openFilePicker"
               @dragover.prevent
-              @dragenter.prevent="isDragging = true"
+              @dragenter.prevent="!fileSlotsFull && (isDragging = true)"
               @dragleave.prevent="isDragging = false"
               @drop.prevent="handleDrop"
             >
@@ -737,6 +747,14 @@ function resetForm() {
 .file-drop-zone--dragging {
   border-color: #863dff;
   background-color: #efe8fd;
+}
+.file-drop-zone--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.file-drop-zone--disabled:hover {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
 }
 
 .file-drop-label {
