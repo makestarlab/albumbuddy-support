@@ -224,20 +224,11 @@ onUnmounted(() => {
       <!-- Bottom gradient + content (295px desktop / 254px mobile) -->
       <div class="hero-bottom">
         <!-- Logo: fixed dimensions, object-fit:contain prevents squish -->
-        <NuxtImg
-          class="hero-logo hero-logo--desktop"
-          :src="imgLogo"
-          alt="AlbumBuddy"
-          fetchpriority="high"
-          sizes="262px md:523px"
-        />
-        <NuxtImg
-          class="hero-logo hero-logo--mobile"
-          :src="imgLogo"
-          alt="AlbumBuddy"
-          fetchpriority="high"
-          sizes="262px"
-        />
+        <p
+          class="text-4xl font-semibold text-white [text-shadow:0_4px_4px_rgba(0,0,0,0.25)] md:text-7xl"
+        >
+          AlbumBuddy
+        </p>
 
         <p class="hero-subtitle">
           {{ t('hero-subtitle') }}
@@ -677,6 +668,14 @@ onUnmounted(() => {
 .phone-mobile-wrap {
   position: relative;
   width: 100%;
+  display: block;
+  /* CLS 방지: 이미지 다운로드 전부터 영역 reserve (Figma 343.48 / 714.28) */
+  aspect-ratio: 343 / 714;
+}
+.phone-mobile-wrap > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
