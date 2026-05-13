@@ -255,13 +255,25 @@ watch(currentLang, async () => {
   margin: 0;
   min-height: 24px;
 }
-.board-post-body :deep(ul),
-.board-post-body :deep(ol) {
+.board-post-body :deep(ul) {
+  list-style: disc;
   margin: 4px 0;
   padding-left: 24px;
 }
+.board-post-body :deep(ol) {
+  list-style: decimal;
+  margin: 4px 0;
+  padding-left: 24px;
+}
+.board-post-body :deep(ul ul) {
+  list-style: circle;
+}
+.board-post-body :deep(ul ul ul) {
+  list-style: square;
+}
 .board-post-body :deep(li) {
   margin: 2px 0;
+  display: list-item; /* Tailwind preflight가 li display 손대는 경우 대비 */
 }
 .board-post-body :deep(h1) {
   font-size: 24px;
